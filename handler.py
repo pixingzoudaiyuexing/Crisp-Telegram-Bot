@@ -35,6 +35,7 @@ def createAiReply(content: str):
         },
         timeout=60
     )
+    response.encoding = "utf-8"
     response.raise_for_status()
     body = response.json()
     return body["choices"][0]["message"]["content"]
@@ -47,6 +48,7 @@ def formatAiError(error: Exception):
 
     message = getattr(error, "message", None) or str(error)
     if response is not None:
+        response.encoding = "utf-8"
         try:
             body = response.json()
             if isinstance(body, dict):
