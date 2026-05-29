@@ -2,6 +2,7 @@
 import bot
 import json
 import base64
+import logging
 import socketio
 import requests
 from telegram.ext import ContextTypes
@@ -17,6 +18,32 @@ aiModel = config["openai"].get("model", "gpt-3.5-turbo")
 replyUser = config.get("replyUser", {})
 aiNickname = replyUser.get("aiNickname", "智能客服")
 aiAvatar = replyUser.get("aiAvatar", "https://img.ixintu.com/download/jpg/20210125/8bff784c4e309db867d43785efde1daf_512_512.jpg")
+
+def formatAiError(error: Exception):
+    response = getattr(error, "response", None)
+    status_code = getattr(error, "status_code", None)
+    if status_code is None and response is not None:
+        status_code = getattr(response, "status_code", None)
+
+    message = getattr(error, "message", None) or str(error)
+    if response is not None:
+        try:
+            body = response.json()
+            if isinstance(body, dict):
+                api_error = body.get("error", body)
+                if isinstance(api_error, dict):
+                    message = api_error.get("message") or json.dumps(api_error, ensure_ascii=False)
+                else:
+                    message = str(api_error)
+        except Exception:
+            try:
+                message = response.text
+            except Exception:
+                pass
+
+    if status_code is not None:
+        return f"{status_code}: {message}"
+    return message
 
 def getKey(content: str):
     if len(config["autoreply"]) > 0:
@@ -106,9 +133,10 @@ async def sendMessage(data):
                 flow.append("")
                 flow.append(f"💡<b>自动回复</b>：{autoreply}")
             except Exception as error:
-                print("AI reply failed: ", error)
+                errorMessage = formatAiError(error)
+                logging.exception("AI reply failed: %s", errorMessage)
                 flow.append("")
-                flow.append("💡<b>自动回复</b>：AI 服务调用失败，请检查 API 地址、Key 或模型配置。")
+                flow.append(f"💡<b>自动回复</b>：AI 服务调用失败：{errorMessage}")
         
         if autoreply is not None:
             query = {
