@@ -61,6 +61,13 @@ def changeButton(sessionId,boolean):
         ]
     )
 
+# EasyImages Config
+EASYIMAGES_API_URL = config.get('easyimages', {}).get('apiUrl', '')
+EASYIMAGES_API_TOKEN = config.get('easyimages', {}).get('apiToken', '')
+REPLY_USER = config.get('replyUser', {})
+OPERATOR_NICKNAME = REPLY_USER.get('operatorNickname', '人工客服')
+OPERATOR_AVATAR = REPLY_USER.get('operatorAvatar', 'https://bpic.51yuansu.com/pic3/cover/03/47/92/65e3b3b1eb909_800.jpg')
+
 async def onReply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     msg = update.effective_message
 
@@ -74,8 +81,8 @@ async def onReply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 "from": "operator",
                 "origin": "chat",
                 "user": {
-                    "nickname": '人工客服',
-                    "avatar": 'https://bpic.51yuansu.com/pic3/cover/03/47/92/65e3b3b1eb909_800.jpg'
+                    "nickname": OPERATOR_NICKNAME,
+                    "avatar": OPERATOR_AVATAR
                 }
             }
             client.website.send_message_in_conversation(
@@ -84,10 +91,6 @@ async def onReply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 query
             )
             return
-
-# EasyImages Config
-EASYIMAGES_API_URL = config.get('easyimages', {}).get('apiUrl', '')
-EASYIMAGES_API_TOKEN = config.get('easyimages', {}).get('apiToken', '')
 
 async def handleImage(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.effective_message
@@ -159,8 +162,8 @@ def send_markdown_to_client(session_id, markdown_link):
             "from": "operator",
             "origin": "chat",
             "user": {
-                "nickname": "人工客服",
-                "avatar": "https://bpic.51yuansu.com/pic3/cover/03/47/92/65e3b3b1eb909_800.jpg"
+                "nickname": OPERATOR_NICKNAME,
+                "avatar": OPERATOR_AVATAR
             }
         }
         client.website.send_message_in_conversation(

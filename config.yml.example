@@ -13,6 +13,13 @@ crisp:
 easyimages:
   apiUrl: "http://127.0.0.1/api/index.php"
   apiToken: "token"
+replyUser:
+  # 人工客服发送到 Crisp 时显示的名字和头像
+  operatorNickname: 人工客服
+  operatorAvatar: https://bpic.51yuansu.com/pic3/cover/03/47/92/65e3b3b1eb909_800.jpg
+  # AI 自动回复发送到 Crisp 时显示的名字和头像
+  aiNickname: 智能客服
+  aiAvatar: https://img.ixintu.com/download/jpg/20210125/8bff784c4e309db867d43785efde1daf_512_512.jpg
 autoreply:
   # 自动关键词回复，你可以复制成多行，每个关键词用 `|` 隔开即可，在 `:` 后输入自动回复内容
   "在吗|你好": "欢迎使用客服系统，请等待客服回复你~"

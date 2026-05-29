@@ -25,6 +25,11 @@ crisp:
 easyimages:
   apiUrl: ${EasyImages_apiUrl}
   apiToken: ${EasyImages_apiToken}
+replyUser:
+  operatorNickname: ${OPERATOR_NICKNAME:-人工客服}
+  operatorAvatar: ${OPERATOR_AVATAR:-https://bpic.51yuansu.com/pic3/cover/03/47/92/65e3b3b1eb909_800.jpg}
+  aiNickname: ${AI_NICKNAME:-智能客服}
+  aiAvatar: ${AI_AVATAR:-https://img.ixintu.com/download/jpg/20210125/8bff784c4e309db867d43785efde1daf_512_512.jpg}
 autoreply:
 ${AUTOREPLY}
 openai:

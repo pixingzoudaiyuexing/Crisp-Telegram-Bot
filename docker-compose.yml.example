@@ -13,6 +13,10 @@ services:
       CRISP_ID: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
       CRISP_KEY: aaaaaaaaaaaaaa11111111aaaaaaaaaaaaaaaaaa
       CRISP_WEBSITE: bbbbbbbb-bbbbb-bbbb-bbbb-bbbbbbbbbbbb
+      OPERATOR_NICKNAME: 人工客服
+      OPERATOR_AVATAR: https://bpic.51yuansu.com/pic3/cover/03/47/92/65e3b3b1eb909_800.jpg
+      AI_NICKNAME: 智能客服
+      AI_AVATAR: https://img.ixintu.com/download/jpg/20210125/8bff784c4e309db867d43785efde1daf_512_512.jpg
       AUTOREPLY: |
         \0  '在吗|你好' : '欢迎使用客服系统，请等待客服回复你~'
         \0  '关键字1|关键字2' : '自动应答语A'
