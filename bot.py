@@ -4,7 +4,6 @@ import yaml
 import logging
 import requests
 
-from openai import OpenAI
 from crisp_api import Crisp
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, Defaults, MessageHandler, filters, ContextTypes, CallbackQueryHandler
@@ -38,14 +37,17 @@ except Exception as error:
     logging.warning('无法连接 Crisp 服务，请确认 Crisp 配置项是否正确')
     exit(1)
 
-# Connect OpenAI-compatible AI service
+# Load OpenAI-compatible AI service config
 try:
     openaiCfg = config.get('openai', {})
     openaiApiKey = openaiCfg.get('apiKey')
-    openaiBaseUrl = openaiCfg.get('baseUrl', 'https://api.openai.com/v1')
+    openaiBaseUrl = openaiCfg.get('baseUrl', 'https://api.openai.com/v1').rstrip('/')
     if not openaiApiKey:
         raise ValueError('OpenAI APIKey 为空')
-    openai = OpenAI(api_key=openaiApiKey, base_url=openaiBaseUrl)
+    openai = {
+        'apiKey': openaiApiKey,
+        'baseUrl': openaiBaseUrl
+    }
 except Exception as error:
     logging.warning(f'无法初始化 AI 服务，智能化回复将不会使用：{error}')
     openai = None

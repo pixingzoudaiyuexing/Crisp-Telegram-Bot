@@ -19,6 +19,26 @@ replyUser = config.get("replyUser", {})
 aiNickname = replyUser.get("aiNickname", "智能客服")
 aiAvatar = replyUser.get("aiAvatar", "https://img.ixintu.com/download/jpg/20210125/8bff784c4e309db867d43785efde1daf_512_512.jpg")
 
+def createAiReply(content: str):
+    response = requests.post(
+        f"{openai['baseUrl']}/chat/completions",
+        headers={
+            "Authorization": f"Bearer {openai['apiKey']}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": aiModel,
+            "messages": [
+                {"role": "system", "content": payload},
+                {"role": "user", "content": content}
+            ]
+        },
+        timeout=60
+    )
+    response.raise_for_status()
+    body = response.json()
+    return body["choices"][0]["message"]["content"]
+
 def formatAiError(error: Exception):
     response = getattr(error, "response", None)
     status_code = getattr(error, "status_code", None)
@@ -122,14 +142,7 @@ async def sendMessage(data):
             flow.append(f"💡<b>自动回复</b>：{autoreply}")
         elif openai is not None and session["enableAI"] is True:
             try:
-                response = openai.chat.completions.create(
-                    model=aiModel,
-                    messages=[
-                        {"role": "system", "content": payload},
-                        {"role": "user", "content": data["content"]}
-                    ]
-                )
-                autoreply = response.choices[0].message.content
+                autoreply = createAiReply(data["content"])
                 flow.append("")
                 flow.append(f"💡<b>自动回复</b>：{autoreply}")
             except Exception as error:
