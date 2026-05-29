@@ -38,12 +38,16 @@ except Exception as error:
     logging.warning('无法连接 Crisp 服务，请确认 Crisp 配置项是否正确')
     exit(1)
 
-# Connect OpenAI
+# Connect OpenAI-compatible AI service
 try:
-    openai = OpenAI(api_key=config['openai']['apiKey'],base_url='https://api.openai.com/v1')
-    openai.models.list()
+    openaiCfg = config.get('openai', {})
+    openaiApiKey = openaiCfg.get('apiKey')
+    openaiBaseUrl = openaiCfg.get('baseUrl', 'https://api.openai.com/v1')
+    if not openaiApiKey:
+        raise ValueError('OpenAI APIKey 为空')
+    openai = OpenAI(api_key=openaiApiKey, base_url=openaiBaseUrl)
 except Exception as error:
-    logging.warning('无法连接 OpenAI 服务，智能化回复将不会使用')
+    logging.warning(f'无法初始化 AI 服务，智能化回复将不会使用：{error}')
     openai = None
 
 def changeButton(sessionId,boolean):

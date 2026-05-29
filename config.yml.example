@@ -17,8 +17,13 @@ autoreply:
   # 自动关键词回复，你可以复制成多行，每个关键词用 `|` 隔开即可，在 `:` 后输入自动回复内容
   "在吗|你好": "欢迎使用客服系统，请等待客服回复你~"
 openai:
+  # 第三方兼容 OpenAI Chat Completions 的 API 地址，需要包含 /v1
+  # 例如：https://api.openai.com/v1 或 https://你的域名/v1
+  baseUrl: https://api.openai.com/v1
   # APIKey
   apiKey: 
+  # 模型名称，按你的第三方 API 支持的模型填写
+  model: gpt-3.5-turbo
   # 预制内容，内容越多token消耗越多，单价越贵
   payload: |
     作为简体中文客服，请始终以温柔、耐心的态度回复所有消息，确保每次交互中用户感受到尊重和理解。

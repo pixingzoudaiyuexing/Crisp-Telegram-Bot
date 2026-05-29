@@ -13,6 +13,7 @@ changeButton = bot.changeButton
 groupId = config["bot"]["groupId"]
 websiteId = config["crisp"]["website"]
 payload = config["openai"]["payload"]
+aiModel = config["openai"].get("model", "gpt-3.5-turbo")
 
 def getKey(content: str):
     if len(config["autoreply"]) > 0:
@@ -90,16 +91,21 @@ async def sendMessage(data):
             flow.append("")
             flow.append(f"💡<b>自动回复</b>：{autoreply}")
         elif openai is not None and session["enableAI"] is True:
-            response = openai.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": payload},
-                    {"role": "user", "content": data["content"]}
-                ]
-            )
-            autoreply = response.choices[0].message.content
-            flow.append("")
-            flow.append(f"💡<b>自动回复</b>：{autoreply}")
+            try:
+                response = openai.chat.completions.create(
+                    model=aiModel,
+                    messages=[
+                        {"role": "system", "content": payload},
+                        {"role": "user", "content": data["content"]}
+                    ]
+                )
+                autoreply = response.choices[0].message.content
+                flow.append("")
+                flow.append(f"💡<b>自动回复</b>：{autoreply}")
+            except Exception as error:
+                print("AI reply failed: ", error)
+                flow.append("")
+                flow.append("💡<b>自动回复</b>：AI 服务调用失败，请检查 API 地址、Key 或模型配置。")
         
         if autoreply is not None:
             query = {

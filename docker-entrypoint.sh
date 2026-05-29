@@ -28,7 +28,9 @@ easyimages:
 autoreply:
 ${AUTOREPLY}
 openai:
+  baseUrl: ${OPENAI_BASEURL:-https://api.openai.com/v1}
   apiKey: ${OPENAI_APIKEY}
+  model: ${OPENAI_MODEL:-gpt-3.5-turbo}
   payload: |
 ${OPENAI_PAYLOAD}
 EOF
