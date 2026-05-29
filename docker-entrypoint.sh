@@ -9,8 +9,8 @@
 #     done
 #     result=`echo -e "${str}"`
 # }
-AUTOREPLY=`echo -e "${AUTOREPLY}"`
-OPENAI_PAYLOAD=`echo -e "${OPENAI_PAYLOAD}"`
+AUTOREPLY=`printf "%b" "${AUTOREPLY}"`
+OPENAI_PAYLOAD=`printf "%b" "${OPENAI_PAYLOAD}"`
 
 # if [ ! -e "/Crisp-Telegram-Bot/config.yml" ]; then
 # conver_to_array ${BOT_SEND_ID}

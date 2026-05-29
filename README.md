@@ -32,6 +32,14 @@ nano config.yml
 python3 bot.py
 ```
 
+## Docker 使用
+```
+cp docker-compose.yml.example docker-compose.yml
+nano docker-compose.yml
+# 修改 Telegram、Crisp、EasyImages、OpenAI-compatible API 等配置
+docker compose up -d --build
+```
+
 ## 申请 Telegram Bot Token
 
 1. 私聊 [https://t.me/BotFather](https://https://t.me/BotFather)
