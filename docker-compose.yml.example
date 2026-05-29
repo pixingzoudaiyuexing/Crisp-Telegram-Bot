@@ -2,8 +2,7 @@ name: crisp-telegram-bot
 
 services:
   bot:
-    build: .
-    image: crisp-telegram-bot:latest
+    image: ghcr.io/pixingzoudaiyuexing/crisp-telegram-bot:latest
     restart: always
     environment:
       TZ: Asia/Shanghai

@@ -37,7 +37,7 @@ python3 bot.py
 cp docker-compose.yml.example docker-compose.yml
 nano docker-compose.yml
 # 修改 Telegram、Crisp、EasyImages、OpenAI-compatible API 等配置
-docker compose up -d --build
+docker compose up -d
 ```
 
 ## 申请 Telegram Bot Token
