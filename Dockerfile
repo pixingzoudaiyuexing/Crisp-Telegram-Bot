@@ -13,7 +13,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-COPY bot.py handler.py learning.py docker-entrypoint.sh ./
+COPY bot.py handler.py learning.py echo_guard.py docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
