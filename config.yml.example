@@ -3,6 +3,9 @@ bot:
   token: 1234:1234567890abcdef
   # 发送至群
   groupId: 0
+ai:
+  # 人工最后一次回复后，超过多少分钟用户再次发消息时自动恢复 AI；设为 0 表示不自动恢复
+  autoResumeMinutes: 30
 crisp:
   # 插件 ID
   id:

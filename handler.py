@@ -1,6 +1,7 @@
 
 import bot
 import json
+import time
 import base64
 import logging
 import socketio
@@ -20,6 +21,7 @@ aiModel = config["openai"].get("model", "gpt-3.5-turbo")
 replyUser = config.get("replyUser", {})
 aiNickname = replyUser.get("aiNickname", "智能客服")
 aiAvatar = replyUser.get("aiAvatar", "https://img.ixintu.com/download/jpg/20210125/8bff784c4e309db867d43785efde1daf_512_512.jpg")
+aiAutoResumeMinutes = float(config.get("ai", {}).get("autoResumeMinutes", 30) or 0)
 
 def createAiReply(content: str):
     response = requests.post(
@@ -77,6 +79,32 @@ def getKey(content: str):
                 if key in content:
                     return True, config["autoreply"][x]
     return False, None
+
+def pauseAiForOperator(session):
+    session["enableAI"] = False
+    session["aiPausedBy"] = "operator"
+    session["lastOperatorReplyAt"] = time.time()
+
+def maybeAutoResumeAi(session):
+    if openai is None:
+        return False
+    if session.get("enableAI") is True:
+        return False
+    if session.get("aiPausedBy") != "operator":
+        return False
+    if aiAutoResumeMinutes <= 0:
+        return False
+
+    last_reply_at = session.get("lastOperatorReplyAt")
+    if last_reply_at is None:
+        return False
+    if time.time() - last_reply_at < aiAutoResumeMinutes * 60:
+        return False
+
+    session["enableAI"] = True
+    session["aiPausedBy"] = None
+    session["lastOperatorReplyAt"] = None
+    return True
 
 def getMetaValue(data: dict, *keys):
     if not isinstance(data, dict):
@@ -151,7 +179,9 @@ async def createSession(data):
         botData[sessionId] = {
             'topicId': topic.message_thread_id,
             'messageId': msg.message_id,
-            'enableAI': enableAI
+            'enableAI': enableAI,
+            'aiPausedBy': None,
+            'lastOperatorReplyAt': None
         }
     else:
         try:
@@ -170,7 +200,7 @@ async def sendMessage(data):
         if echo_guard.consume(sessionId, data.get("content")):
             return
         if session is not None and message_from == "operator":
-            session["enableAI"] = False
+            pauseAiForOperator(session)
             await bot.send_message(
                 groupId,
                 f"👩‍💻<b>人工客服已接入</b>：AI 自动回复已暂停。\n\n🧾<b>人工回复</b>：{data.get('content', '')}",
@@ -188,6 +218,10 @@ async def sendMessage(data):
         learning.log_event("user_message", sessionId, data["content"], sessionMeta)
         flow = ['📠<b>消息推送</b>','']
         flow.append(f"🧾<b>消息内容</b>：{data['content']}")
+        resumed_ai = maybeAutoResumeAi(session)
+        if resumed_ai:
+            flow.append("")
+            flow.append(f"⏱<b>AI 状态</b>：人工超过 {aiAutoResumeMinutes:g} 分钟未回复，AI 自动回复已恢复。")
 
         result, autoreply = False, None
         if session["enableAI"] is True:

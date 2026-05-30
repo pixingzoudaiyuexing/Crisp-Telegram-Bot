@@ -2,31 +2,64 @@ name: crisp-telegram-bot
 
 services:
   bot:
+    # Docker 镜像地址；默认使用 GitHub Actions 构建出来的 latest 版本
     image: ghcr.io/pixingzoudaiyuexing/crisp-telegram-bot:latest
+    # 容器异常退出后自动重启
     restart: always
     volumes:
+      # 挂载数据目录，learning_logs.jsonl 会保存在宿主机 ./data 里
       - ./data:/Crisp-Telegram-Bot/data
     environment:
+      # 容器时区
       TZ: Asia/Shanghai
+
+      # Telegram Bot Token，从 BotFather 获取
       BOT_TOKEN: 12345:abcdefghijklm
+      # Telegram 话题群 ID，一般是 -100 开头
       BOT_GROUPID: -123456
+
+      # EasyImages 图床 API，用于 Telegram 人工发送图片时上传并转成图片链接
       EasyImages_apiUrl: "http://127.0.0.1/api/index.php"
+      # EasyImages 图床 Token
       EasyImages_apiToken: "token"
+
+      # 是否记录用户问题、AI 回复、人工回复，方便以后整理知识库
       LEARNING_ENABLED: "true"
+      # 学习日志保存路径；配合上面的 volume，宿主机路径是 ./data/learning_logs.jsonl
       LEARNING_LOG_PATH: /Crisp-Telegram-Bot/data/learning_logs.jsonl
+
+      # Crisp 插件 ID
       CRISP_ID: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+      # Crisp 插件 Key
       CRISP_KEY: aaaaaaaaaaaaaa11111111aaaaaaaaaaaaaaaaaa
+      # Crisp 网站 ID
       CRISP_WEBSITE: bbbbbbbb-bbbbb-bbbb-bbbb-bbbbbbbbbbbb
+
+      # Telegram 人工客服回复到 Crisp 时显示的名字
       OPERATOR_NICKNAME: 人工客服
+      # Telegram 人工客服回复到 Crisp 时显示的头像
       OPERATOR_AVATAR: https://bpic.51yuansu.com/pic3/cover/03/47/92/65e3b3b1eb909_800.jpg
+      # AI 自动回复到 Crisp 时显示的名字
       AI_NICKNAME: 智能客服
+      # AI 自动回复到 Crisp 时显示的头像
       AI_AVATAR: https://img.ixintu.com/download/jpg/20210125/8bff784c4e309db867d43785efde1daf_512_512.jpg
+      # 人工最后一次回复后，超过多少分钟用户再次发消息时自动恢复 AI；设为 "0" 表示永不自动恢复
+      AI_AUTO_RESUME_MINUTES: "30"
+
+      # 关键词自动回复；左边是关键词，多个关键词用 | 分隔；右边是回复内容
+      # 注意保留每行开头的 \0，它用于生成 config.yml 缩进
       AUTOREPLY: |
         \0  '在吗|你好' : '欢迎使用客服系统，请等待客服回复你~'
         \0  '关键字1|关键字2' : '自动应答语A'
+
+      # 第三方 OpenAI 兼容接口 Key
       OPENAI_APIKEY: 
+      # 第三方 OpenAI 兼容接口地址，需要包含 /v1
       OPENAI_BASEURL: https://api.openai.com/v1
+      # 模型名称，按你的第三方 API 支持的模型填写
       OPENAI_MODEL: gpt-3.5-turbo
+      # AI 客服提示词/知识库；内容越多，调用消耗越高
+      # 注意保留每行开头的 \0，它用于生成 config.yml 缩进
       OPENAI_PAYLOAD: |
         \0    作为简体中文客服，请始终以温柔、耐心的态度回复所有消息，确保每次交互中用户感受到尊重和理解。
         \0    请仅使用纯文本回复，不得使用其他语言或格式化语法。
@@ -37,4 +70,5 @@ services:
       - network
 
 networks:
+  # 默认 bridge 网络，保持服务网络隔离
   network:

@@ -18,6 +18,8 @@ cat > /Crisp-Telegram-Bot/config.yml << EOF
 bot:
   token: ${BOT_TOKEN}
   groupId: ${BOT_GROUPID}
+ai:
+  autoResumeMinutes: ${AI_AUTO_RESUME_MINUTES:-30}
 crisp:
   id: ${CRISP_ID}
   key: ${CRISP_KEY}
