@@ -10,6 +10,7 @@ from telegram.ext import Application, Defaults, MessageHandler, filters, Context
 
 import handler
 import learning
+import echo_guard
 
 # Enable logging
 logging.basicConfig(
@@ -77,13 +78,28 @@ REPLY_USER = config.get('replyUser', {})
 OPERATOR_NICKNAME = REPLY_USER.get('operatorNickname', '人工客服')
 OPERATOR_AVATAR = REPLY_USER.get('operatorAvatar', 'https://bpic.51yuansu.com/pic3/cover/03/47/92/65e3b3b1eb909_800.jpg')
 
+def set_session_ai(session, enabled):
+    session["enableAI"] = enabled
+
 async def onReply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     msg = update.effective_message
 
     if msg.chat_id != config['bot']['groupId']:
         return
     for sessionId in context.bot_data:
-        if context.bot_data[sessionId]['topicId'] == msg.message_thread_id:
+        session = context.bot_data[sessionId]
+        if session['topicId'] == msg.message_thread_id:
+            command = (msg.text or '').split()[0].split('@')[0]
+            if command == '/ai_on':
+                set_session_ai(session, True)
+                await msg.reply_text("AI 自动回复已打开。")
+                return
+            if command == '/ai_off':
+                set_session_ai(session, False)
+                await msg.reply_text("AI 自动回复已关闭。")
+                return
+
+            set_session_ai(session, False)
             query = {
                 "type": "text",
                 "content": msg.text,
@@ -94,6 +110,7 @@ async def onReply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     "avatar": OPERATOR_AVATAR
                 }
             }
+            echo_guard.record(sessionId, msg.text)
             client.website.send_message_in_conversation(
                 config['crisp']['website'],
                 sessionId,
@@ -132,6 +149,7 @@ async def handleImage(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # 查找对应的 Crisp 会话 ID
         session_id = get_target_session_id(context, msg.message_thread_id)
         if session_id:
+            context.bot_data[session_id]["enableAI"] = False
             # 将 Markdown 链接推送给客户
             send_markdown_to_client(session_id, markdown_link)
             learning.log_event(
@@ -187,6 +205,7 @@ def send_markdown_to_client(session_id, markdown_link):
                 "avatar": OPERATOR_AVATAR
             }
         }
+        echo_guard.record(session_id, markdown_link)
         client.website.send_message_in_conversation(
             config['crisp']['website'],
             session_id,

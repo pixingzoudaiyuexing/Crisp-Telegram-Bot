@@ -7,6 +7,7 @@ import socketio
 import requests
 from telegram.ext import ContextTypes
 import learning
+import echo_guard
 
 config = bot.config
 client = bot.client
@@ -164,6 +165,20 @@ async def sendMessage(data):
     sessionId = data["session_id"]
     session = botData.get(sessionId)
 
+    message_from = data.get("from")
+    if message_from != "user":
+        if echo_guard.consume(sessionId, data.get("content")):
+            return
+        if session is not None and message_from == "operator":
+            session["enableAI"] = False
+            await bot.send_message(
+                groupId,
+                f"👩‍💻<b>人工客服已接入</b>：AI 自动回复已暂停。\n\n🧾<b>人工回复</b>：{data.get('content', '')}",
+                message_thread_id=session["topicId"],
+                reply_markup=changeButton(sessionId, session["enableAI"])
+            )
+        return
+
     client.website.mark_messages_read_in_conversation(websiteId,sessionId,
         {"from": "user", "origin": "chat", "fingerprints": [data["fingerprint"]]}
     )
@@ -174,7 +189,9 @@ async def sendMessage(data):
         flow = ['📠<b>消息推送</b>','']
         flow.append(f"🧾<b>消息内容</b>：{data['content']}")
 
-        result, autoreply = getKey(data["content"])
+        result, autoreply = False, None
+        if session["enableAI"] is True:
+            result, autoreply = getKey(data["content"])
         if result is True:
             flow.append("")
             flow.append(f"💡<b>自动回复</b>：{autoreply}")
@@ -201,6 +218,7 @@ async def sendMessage(data):
                     "avatar": aiAvatar
                 }
             }
+            echo_guard.record(sessionId, autoreply)
             client.website.send_message_in_conversation(websiteId, sessionId, query)
         await bot.send_message(
             groupId,
