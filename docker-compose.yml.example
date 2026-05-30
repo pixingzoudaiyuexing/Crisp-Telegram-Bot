@@ -4,12 +4,16 @@ services:
   bot:
     image: ghcr.io/pixingzoudaiyuexing/crisp-telegram-bot:latest
     restart: always
+    volumes:
+      - ./data:/Crisp-Telegram-Bot/data
     environment:
       TZ: Asia/Shanghai
       BOT_TOKEN: 12345:abcdefghijklm
       BOT_GROUPID: -123456
       EasyImages_apiUrl: "http://127.0.0.1/api/index.php"
       EasyImages_apiToken: "token"
+      LEARNING_ENABLED: "true"
+      LEARNING_LOG_PATH: /Crisp-Telegram-Bot/data/learning_logs.jsonl
       CRISP_ID: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
       CRISP_KEY: aaaaaaaaaaaaaa11111111aaaaaaaaaaaaaaaaaa
       CRISP_WEBSITE: bbbbbbbb-bbbbb-bbbb-bbbb-bbbbbbbbbbbb

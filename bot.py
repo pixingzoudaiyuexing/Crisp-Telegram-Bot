@@ -9,6 +9,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, Defaults, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
 import handler
+import learning
 
 # Enable logging
 logging.basicConfig(
@@ -24,6 +25,7 @@ try:
 except FileNotFoundError as error:
     logging.warning('没有找到 config.yml，请复制 config.yml.example 并重命名为 config.yml')
     exit(1)
+learning.setup(config)
 
 # Connect Crisp
 try:
@@ -52,12 +54,17 @@ except Exception as error:
     logging.warning(f'无法初始化 AI 服务，智能化回复将不会使用：{error}')
     openai = None
 
-def changeButton(sessionId,boolean):
+def changeButton(sessionId, boolean=None):
     return InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton(
-                text='关闭 AI 回复' if boolean else '打开 AI 回复',
-                callback_data=f'{sessionId},{boolean}'
+            [
+                InlineKeyboardButton(
+                    text='/ai_on 打开 AI',
+                    callback_data=f'{sessionId},on'
+                ),
+                InlineKeyboardButton(
+                    text='/ai_off 关闭 AI',
+                    callback_data=f'{sessionId},off'
                 )
             ]
         ]
@@ -92,6 +99,12 @@ async def onReply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 sessionId,
                 query
             )
+            learning.log_event(
+                "operator_reply",
+                sessionId,
+                msg.text,
+                extra={"telegramThreadId": msg.message_thread_id}
+            )
             return
 
 async def handleImage(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -121,6 +134,12 @@ async def handleImage(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if session_id:
             # 将 Markdown 链接推送给客户
             send_markdown_to_client(session_id, markdown_link)
+            learning.log_event(
+                "operator_image_reply",
+                session_id,
+                markdown_link,
+                extra={"telegramThreadId": msg.message_thread_id}
+            )
             await msg.reply_text("图片已成功发送给客户！")
         else:
             await msg.reply_text("未找到对应的 Crisp 会话，无法发送给客户。")
@@ -187,8 +206,19 @@ async def onChange(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         data = query.data.split(',')
         session = context.bot_data.get(data[0])
-        session["enableAI"] = not eval(data[1])
-        await query.answer()
+        if session is None:
+            await query.answer('未找到对应会话')
+            return
+
+        if data[1] == 'on':
+            session["enableAI"] = True
+            await query.answer('AI 自动回复已打开')
+        elif data[1] == 'off':
+            session["enableAI"] = False
+            await query.answer('AI 自动回复已关闭')
+        else:
+            session["enableAI"] = not eval(data[1])
+            await query.answer()
         try:
              await query.edit_message_reply_markup(changeButton(data[0],session["enableAI"]))
         except Exception as error:

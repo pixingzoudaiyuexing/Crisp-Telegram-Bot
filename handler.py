@@ -6,6 +6,7 @@ import logging
 import socketio
 import requests
 from telegram.ext import ContextTypes
+import learning
 
 config = bot.config
 client = bot.client
@@ -76,21 +77,54 @@ def getKey(content: str):
                     return True, config["autoreply"][x]
     return False, None
 
-def getMetas(sessionId):
+def getMetaValue(data: dict, *keys):
+    if not isinstance(data, dict):
+        return None
+
+    lowerData = {str(key).lower(): value for key, value in data.items()}
+    for key in keys:
+        value = data.get(key)
+        if value is None:
+            value = lowerData.get(str(key).lower())
+        if value is not None and str(value).strip() != "":
+            return value
+    return None
+
+def formatMetaValue(value):
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False)
+    return str(value)
+
+def getSessionMeta(sessionId):
     metas = client.website.get_conversation_metas(websiteId, sessionId)
+    data = metas.get("data", {})
+
+    email = metas.get("email") or getMetaValue(data, "email")
+    plan = getMetaValue(data, "plan", "Plan")
+    expired = getMetaValue(data, "expired", "Expired", "expire", "expires_at", "expired_at", "expire_at")
+    usedTraffic = getMetaValue(data, "UsedTraffic", "usedTraffic", "used_traffic")
+    allTraffic = getMetaValue(data, "AllTraffic", "allTraffic", "all_traffic")
+
+    return {
+        "email": email,
+        "plan": plan,
+        "expired": expired,
+        "traffic": f"{formatMetaValue(usedTraffic)} / {formatMetaValue(allTraffic)}" if usedTraffic and allTraffic else None,
+    }
+
+def getMetas(sessionId):
+    meta = getSessionMeta(sessionId)
 
     flow = ['📠<b>Crisp消息推送</b>','']
-    if len(metas["email"]) > 0:
-        email = metas["email"]
-        flow.append(f'📧<b>电子邮箱</b>：{email}')
-    if len(metas["data"]) > 0:
-        if "Plan" in metas["data"]:
-            Plan = metas["data"]["Plan"]
-            flow.append(f"🪪<b>使用套餐</b>：{Plan}")
-        if "UsedTraffic" in metas["data"] and "AllTraffic" in metas["data"]:
-            UsedTraffic = metas["data"]["UsedTraffic"]
-            AllTraffic = metas["data"]["AllTraffic"]
-            flow.append(f"🗒<b>流量信息</b>：{UsedTraffic} / {AllTraffic}")
+
+    if meta.get("email"):
+        flow.append(f'📧<b>电子邮箱</b>：{formatMetaValue(meta["email"])}')
+    if meta.get("plan"):
+        flow.append(f"🪪<b>使用套餐</b>：{formatMetaValue(meta['plan'])}")
+    if meta.get("expired"):
+        flow.append(f"⏰<b>到期时间</b>：{formatMetaValue(meta['expired'])}")
+    if meta.get("traffic"):
+        flow.append(f"🗒<b>流量信息</b>：{meta['traffic']}")
     if len(flow) > 2:
         return '\n'.join(flow)
     return '无额外信息'
@@ -135,6 +169,8 @@ async def sendMessage(data):
     )
 
     if data["type"] == "text":
+        sessionMeta = getSessionMeta(sessionId)
+        learning.log_event("user_message", sessionId, data["content"], sessionMeta)
         flow = ['📠<b>消息推送</b>','']
         flow.append(f"🧾<b>消息内容</b>：{data['content']}")
 
@@ -154,6 +190,7 @@ async def sendMessage(data):
                 flow.append(f"💡<b>自动回复</b>：AI 服务调用失败：{errorMessage}")
         
         if autoreply is not None:
+            learning.log_event("ai_reply", sessionId, autoreply, sessionMeta)
             query = {
                 "type": "text",
                 "content": autoreply,
@@ -168,13 +205,15 @@ async def sendMessage(data):
         await bot.send_message(
             groupId,
             '\n'.join(flow),
-            message_thread_id=session["topicId"]
+            message_thread_id=session["topicId"],
+            reply_markup=changeButton(sessionId, session["enableAI"])
         )
     elif data["type"] == "file" and str(data["content"]["type"]).count("image") > 0:
         await bot.send_photo(
             groupId,
             data["content"]["url"],
-            message_thread_id=session["topicId"]
+            message_thread_id=session["topicId"],
+            reply_markup=changeButton(sessionId, session["enableAI"])
         )
     else:
         print("Unhandled Message Type : ", data["type"])

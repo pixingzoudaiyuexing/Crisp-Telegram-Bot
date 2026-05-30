@@ -13,6 +13,10 @@ crisp:
 easyimages:
   apiUrl: "http://127.0.0.1/api/index.php"
   apiToken: "token"
+learning:
+  # 记录用户问题、AI 回复、人工回复，用于后续人工整理 FAQ；会做基础脱敏
+  enabled: true
+  logPath: data/learning_logs.jsonl
 replyUser:
   # 人工客服发送到 Crisp 时显示的名字和头像
   operatorNickname: 人工客服

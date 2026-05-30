@@ -25,6 +25,9 @@ crisp:
 easyimages:
   apiUrl: ${EasyImages_apiUrl}
   apiToken: ${EasyImages_apiToken}
+learning:
+  enabled: ${LEARNING_ENABLED:-true}
+  logPath: ${LEARNING_LOG_PATH:-/Crisp-Telegram-Bot/data/learning_logs.jsonl}
 replyUser:
   operatorNickname: ${OPERATOR_NICKNAME:-人工客服}
   operatorAvatar: ${OPERATOR_AVATAR:-https://bpic.51yuansu.com/pic3/cover/03/47/92/65e3b3b1eb909_800.jpg}
