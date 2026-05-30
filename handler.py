@@ -194,8 +194,17 @@ async def sendMessage(data):
     botData = callbackContext.bot_data
     sessionId = data["session_id"]
     session = botData.get(sessionId)
-
     message_from = data.get("from")
+
+    logging.info(
+        "Crisp message received: session=%s type=%s from=%s origin=%s fingerprint=%s",
+        sessionId,
+        data.get("type"),
+        message_from,
+        data.get("origin"),
+        data.get("fingerprint")
+    )
+
     if message_from != "user":
         if echo_guard.consume(sessionId, data.get("content")):
             return
@@ -280,6 +289,7 @@ async def connect():
         "password": config["crisp"]["key"],
         "events": [
             "message:send",
+            "message:received",
             "session:set_data"
         ]})
 @sio.on("unauthorized")
@@ -293,6 +303,13 @@ async def disconnect():
     print("Disconnected from server.")
 @sio.on("message:send")
 async def messageForward(data):
+    if data["website_id"] != websiteId:
+        return
+    await createSession(data)
+    await sendMessage(data)
+
+@sio.on("message:received")
+async def messageReceivedForward(data):
     if data["website_id"] != websiteId:
         return
     await createSession(data)
