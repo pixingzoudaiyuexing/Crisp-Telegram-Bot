@@ -23,6 +23,8 @@
 
 推荐使用 Docker Compose。
 
+如果要部署到 Cloudflare Workers，查看 [worker/README.md](worker/README.md)。Worker 版使用 Telegram Webhook + Crisp WebHook，不需要服务器和 Docker。
+
 ```bash
 mkdir -p /www/wwwroot/crisp-tg-ai
 cd /www/wwwroot/crisp-tg-ai

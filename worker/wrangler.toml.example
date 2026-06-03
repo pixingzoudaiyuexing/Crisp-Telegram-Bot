@@ -1,0 +1,51 @@
+name = "crisp-telegram-ai-worker"
+main = "src/index.js"
+compatibility_date = "2026-06-03"
+
+# 创建 KV：
+# npx wrangler kv namespace create STATE
+[[kv_namespaces]]
+binding = "STATE"
+id = "填入 KV namespace id"
+
+# 可选：保存 learning_logs.jsonl 到 R2。免费版也可以先不配，日志仍会输出到 Worker Logs。
+# npx wrangler r2 bucket create crisp-tg-learning
+# [[r2_buckets]]
+# binding = "LEARNING_LOGS"
+# bucket_name = "crisp-tg-learning"
+
+[vars]
+BOT_GROUPID = "-1001234567890"
+CRISP_WEBSITE = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+OPENAI_BASEURL = "https://api.openai.com/v1"
+OPENAI_MODEL = "gpt-4o-mini"
+OPENAI_PAYLOAD = "你是简体中文在线客服，回复要简短、自然、像真人客服。"
+
+# Worker 版关键词回复使用 JSON，不使用 Docker 版 AUTOREPLY 的 YAML 写法。
+AUTOREPLY_JSON = "{\"在吗|你好\":\"欢迎使用客服系统，请问有什么可以帮您？\"}"
+
+AI_AUTO_RESUME_MINUTES = "30"
+TG_NOTIFY_WHEN_CRISP_OPERATOR = "silent"
+TG_NOTIFY_WHEN_TELEGRAM_OPERATOR = "normal"
+TG_NOTIFY_WHEN_MANUAL_OFF = "silent"
+
+LEARNING_ENABLED = "true"
+LEARNING_IMAGE_ENABLED = "true"
+
+OPERATOR_NICKNAME = "人工客服"
+OPERATOR_AVATAR = "https://example.com/operator.jpg"
+AI_NICKNAME = "智能客服"
+AI_AVATAR = "https://example.com/ai.jpg"
+
+EASYIMAGES_API_URL = "https://example.com/api/index.php"
+
+# 敏感信息不要写进 wrangler.toml，用下面命令写入：
+# npx wrangler secret put BOT_TOKEN
+# npx wrangler secret put TELEGRAM_SECRET
+# npx wrangler secret put CRISP_ID
+# npx wrangler secret put CRISP_KEY
+# npx wrangler secret put CRISP_HOOK_PATH_SECRET
+# npx wrangler secret put CRISP_HOOK_SECRET
+# npx wrangler secret put OPENAI_APIKEY
+# npx wrangler secret put EASYIMAGES_API_TOKEN
