@@ -165,8 +165,13 @@ async def handleImage(update: Update, context: ContextTypes.DEFAULT_TYPE):
             learning.log_event(
                 "operator_image_reply",
                 session_id,
-                markdown_link,
-                extra={"telegramThreadId": msg.message_thread_id}
+                "人工发送图片",
+                extra={
+                    "imageUrl": uploaded_url,
+                    "sourceUrl": file_url,
+                    "markdown": markdown_link,
+                    "telegramThreadId": msg.message_thread_id
+                }
             )
             await msg.reply_text("图片已成功发送给客户！")
         else:
