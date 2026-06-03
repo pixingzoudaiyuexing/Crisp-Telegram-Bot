@@ -1,6 +1,5 @@
 
 import os
-import time
 import yaml
 import logging
 import requests
@@ -12,6 +11,7 @@ from telegram.ext import Application, Defaults, MessageHandler, filters, Context
 import handler
 import learning
 import echo_guard
+import session_state
 
 # Enable logging
 logging.basicConfig(
@@ -78,18 +78,13 @@ EASYIMAGES_API_TOKEN = config.get('easyimages', {}).get('apiToken', '')
 REPLY_USER = config.get('replyUser', {})
 OPERATOR_NICKNAME = REPLY_USER.get('operatorNickname', '人工客服')
 OPERATOR_AVATAR = REPLY_USER.get('operatorAvatar', 'https://bpic.51yuansu.com/pic3/cover/03/47/92/65e3b3b1eb909_800.jpg')
-
-def set_session_ai(session, enabled, paused_by=None):
-    session["enableAI"] = enabled
-    if enabled:
-        session["aiPausedBy"] = None
-        session["lastOperatorReplyAt"] = None
-    elif paused_by == "operator":
-        session["aiPausedBy"] = "operator"
-        session["lastOperatorReplyAt"] = time.time()
-    else:
-        session["aiPausedBy"] = "manual"
-        session["lastOperatorReplyAt"] = None
+TG_NOTIFY = config.get('telegramNotify', {}) or {}
+TG_NOTIFY_WHEN_TELEGRAM_OPERATOR = session_state.normalize_notify_mode(
+    TG_NOTIFY.get('whenTelegramOperator'), 'normal'
+)
+TG_NOTIFY_WHEN_MANUAL_OFF = session_state.normalize_notify_mode(
+    TG_NOTIFY.get('whenManualOff'), 'silent'
+)
 
 async def onReply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     msg = update.effective_message
@@ -101,15 +96,15 @@ async def onReply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if session['topicId'] == msg.message_thread_id:
             command = (msg.text or '').split()[0].split('@')[0]
             if command == '/ai_on':
-                set_session_ai(session, True)
+                session_state.set_ai(session, True)
                 await msg.reply_text("AI 自动回复已打开。")
                 return
             if command == '/ai_off':
-                set_session_ai(session, False, paused_by="manual")
+                session_state.set_ai(session, False, paused_by="manual", notify_mode=TG_NOTIFY_WHEN_MANUAL_OFF)
                 await msg.reply_text("AI 自动回复已关闭。")
                 return
 
-            set_session_ai(session, False, paused_by="operator")
+            session_state.set_ai(session, False, paused_by="operator", notify_mode=TG_NOTIFY_WHEN_TELEGRAM_OPERATOR)
             query = {
                 "type": "text",
                 "content": msg.text,
@@ -159,7 +154,12 @@ async def handleImage(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # 查找对应的 Crisp 会话 ID
         session_id = get_target_session_id(context, msg.message_thread_id)
         if session_id:
-            set_session_ai(context.bot_data[session_id], False, paused_by="operator")
+            session_state.set_ai(
+                context.bot_data[session_id],
+                False,
+                paused_by="operator",
+                notify_mode=TG_NOTIFY_WHEN_TELEGRAM_OPERATOR
+            )
             # 将 Markdown 链接推送给客户
             send_markdown_to_client(session_id, markdown_link)
             learning.log_event(
@@ -240,13 +240,13 @@ async def onChange(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             return
 
         if data[1] == 'on':
-            set_session_ai(session, True)
+            session_state.set_ai(session, True)
             await query.answer('AI 自动回复已打开')
         elif data[1] == 'off':
-            set_session_ai(session, False, paused_by="manual")
+            session_state.set_ai(session, False, paused_by="manual", notify_mode=TG_NOTIFY_WHEN_MANUAL_OFF)
             await query.answer('AI 自动回复已关闭')
         else:
-            set_session_ai(session, not eval(data[1]))
+            session_state.set_ai(session, not eval(data[1]))
             await query.answer()
         try:
              await query.edit_message_reply_markup(changeButton(data[0],session["enableAI"]))

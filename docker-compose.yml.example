@@ -25,6 +25,8 @@ services:
 
       # 是否记录用户问题、AI 回复、人工回复，方便以后整理知识库
       LEARNING_ENABLED: "true"
+      # 是否把用户发来的图片上传到 EasyImages，并把图床链接写入学习日志
+      LEARNING_IMAGE_ENABLED: "true"
       # 学习日志保存路径；配合上面的 volume，宿主机路径是 ./data/learning_logs.jsonl
       LEARNING_LOG_PATH: /Crisp-Telegram-Bot/data/learning_logs.jsonl
 
@@ -45,6 +47,12 @@ services:
       AI_AVATAR: https://img.ixintu.com/download/jpg/20210125/8bff784c4e309db867d43785efde1daf_512_512.jpg
       # 人工最后一次回复后，超过多少分钟用户再次发消息时自动恢复 AI；设为 "0" 表示永不自动恢复
       AI_AUTO_RESUME_MINUTES: "30"
+      # Crisp 后台人工回复后，后续用户消息推送到 TG 时是否静默；可选 normal / silent
+      TG_NOTIFY_WHEN_CRISP_OPERATOR: silent
+      # Telegram 内人工回复后，后续用户消息推送到 TG 时是否静默；可选 normal / silent
+      TG_NOTIFY_WHEN_TELEGRAM_OPERATOR: normal
+      # 手动点击 /ai_off 后，后续用户消息推送到 TG 时是否静默；可选 normal / silent
+      TG_NOTIFY_WHEN_MANUAL_OFF: silent
 
       # 关键词自动回复；左边是关键词，多个关键词用 | 分隔；右边是回复内容
       # 注意保留每行开头的 \0，它用于生成 config.yml 缩进

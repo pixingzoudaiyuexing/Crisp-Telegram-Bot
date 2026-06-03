@@ -1,7 +1,6 @@
 
 import bot
 import json
-import time
 import base64
 import logging
 import socketio
@@ -9,6 +8,7 @@ import requests
 from telegram.ext import ContextTypes
 import learning
 import echo_guard
+import session_state
 
 config = bot.config
 client = bot.client
@@ -22,6 +22,16 @@ replyUser = config.get("replyUser", {})
 aiNickname = replyUser.get("aiNickname", "智能客服")
 aiAvatar = replyUser.get("aiAvatar", "https://img.ixintu.com/download/jpg/20210125/8bff784c4e309db867d43785efde1daf_512_512.jpg")
 aiAutoResumeMinutes = float(config.get("ai", {}).get("autoResumeMinutes", 30) or 0)
+telegramNotify = config.get("telegramNotify", {}) or {}
+tgNotifyWhenCrispOperator = session_state.normalize_notify_mode(
+    telegramNotify.get("whenCrispOperator"), "silent"
+)
+
+easyImagesCfg = config.get("easyimages", {}) or {}
+easyImagesApiUrl = easyImagesCfg.get("apiUrl", "")
+easyImagesApiToken = easyImagesCfg.get("apiToken", "")
+learningCfg = config.get("learning", {}) or {}
+learningImageEnabled = bool(learningCfg.get("imageEnabled", True))
 
 def createAiReply(content: str):
     response = requests.post(
@@ -80,31 +90,41 @@ def getKey(content: str):
                     return True, config["autoreply"][x]
     return False, None
 
-def pauseAiForOperator(session):
-    session["enableAI"] = False
-    session["aiPausedBy"] = "operator"
-    session["lastOperatorReplyAt"] = time.time()
+def uploadImageUrlToEasyImages(image_url):
+    if not easyImagesApiUrl or not easyImagesApiToken:
+        return None
 
-def maybeAutoResumeAi(session):
-    if openai is None:
-        return False
-    if session.get("enableAI") is True:
-        return False
-    if session.get("aiPausedBy") != "operator":
-        return False
-    if aiAutoResumeMinutes <= 0:
-        return False
+    response = requests.get(image_url, stream=True, timeout=30)
+    response.raise_for_status()
 
-    last_reply_at = session.get("lastOperatorReplyAt")
-    if last_reply_at is None:
-        return False
-    if time.time() - last_reply_at < aiAutoResumeMinutes * 60:
-        return False
+    content_type = response.headers.get("content-type", "image/jpeg")
+    files = {
+        "image": ("user-image.jpg", response.raw, content_type),
+        "token": (None, easyImagesApiToken)
+    }
+    upload_response = requests.post(easyImagesApiUrl, files=files, timeout=60)
+    upload_response.raise_for_status()
+    body = upload_response.json()
+    if body.get("result") == "success":
+        return body["url"]
 
-    session["enableAI"] = True
-    session["aiPausedBy"] = None
-    session["lastOperatorReplyAt"] = None
-    return True
+    raise Exception(f"Image upload failed: {body}")
+
+def getCrispImageUrl(data):
+    content = data.get("content")
+    if isinstance(content, dict):
+        return content.get("url") or content.get("href")
+    if isinstance(content, str):
+        return content
+    return None
+
+def sendTgMessage(bot, session, *args, **kwargs):
+    kwargs.setdefault("disable_notification", session_state.is_tg_silent(session))
+    return bot.send_message(*args, **kwargs)
+
+def sendTgPhoto(bot, session, *args, **kwargs):
+    kwargs.setdefault("disable_notification", session_state.is_tg_silent(session))
+    return bot.send_photo(*args, **kwargs)
 
 def getMetaValue(data: dict, *keys):
     if not isinstance(data, dict):
@@ -181,7 +201,8 @@ async def createSession(data):
             'messageId': msg.message_id,
             'enableAI': enableAI,
             'aiPausedBy': None,
-            'lastOperatorReplyAt': None
+            'lastOperatorReplyAt': None,
+            'tgNotifyMode': 'normal'
         }
     else:
         try:
@@ -209,8 +230,10 @@ async def sendMessage(data):
         if echo_guard.consume(sessionId, data.get("content")):
             return
         if session is not None and message_from == "operator":
-            pauseAiForOperator(session)
-            await bot.send_message(
+            session_state.set_ai(session, False, paused_by="operator", notify_mode=tgNotifyWhenCrispOperator)
+            await sendTgMessage(
+                bot,
+                session,
                 groupId,
                 f"👩‍💻<b>人工客服已接入</b>：AI 自动回复已暂停。\n\n🧾<b>人工回复</b>：{data.get('content', '')}",
                 message_thread_id=session["topicId"],
@@ -227,7 +250,7 @@ async def sendMessage(data):
         learning.log_event("user_message", sessionId, data["content"], sessionMeta)
         flow = ['📠<b>消息推送</b>','']
         flow.append(f"🧾<b>消息内容</b>：{data['content']}")
-        resumed_ai = maybeAutoResumeAi(session)
+        resumed_ai = session_state.maybe_auto_resume_ai(session, openai is not None, aiAutoResumeMinutes)
         if resumed_ai:
             flow.append("")
             flow.append(f"⏱<b>AI 状态</b>：人工超过 {aiAutoResumeMinutes:g} 分钟未回复，AI 自动回复已恢复。")
@@ -263,16 +286,40 @@ async def sendMessage(data):
             }
             echo_guard.record(sessionId, autoreply)
             client.website.send_message_in_conversation(websiteId, sessionId, query)
-        await bot.send_message(
+        await sendTgMessage(
+            bot,
+            session,
             groupId,
             '\n'.join(flow),
             message_thread_id=session["topicId"],
             reply_markup=changeButton(sessionId, session["enableAI"])
         )
     elif data["type"] == "file" and str(data["content"]["type"]).count("image") > 0:
-        await bot.send_photo(
+        source_url = getCrispImageUrl(data)
+        stored_url = source_url
+        if learningImageEnabled and source_url:
+            try:
+                stored_url = uploadImageUrlToEasyImages(source_url) or source_url
+            except Exception as error:
+                logging.warning("无法上传用户图片到 EasyImages：%s", error)
+
+            learning.log_event(
+                "user_image",
+                sessionId,
+                "用户发送图片",
+                getSessionMeta(sessionId),
+                extra={
+                    "imageUrl": stored_url,
+                    "sourceUrl": source_url,
+                    "telegramThreadId": session["topicId"]
+                }
+            )
+
+        await sendTgPhoto(
+            bot,
+            session,
             groupId,
-            data["content"]["url"],
+            source_url,
             message_thread_id=session["topicId"],
             reply_markup=changeButton(sessionId, session["enableAI"])
         )

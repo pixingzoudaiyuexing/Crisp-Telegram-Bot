@@ -6,6 +6,13 @@ bot:
 ai:
   # 人工最后一次回复后，超过多少分钟用户再次发消息时自动恢复 AI；设为 0 表示不自动恢复
   autoResumeMinutes: 30
+telegramNotify:
+  # Crisp 后台人工回复后，后续用户消息推送到 TG 时是否静默；可选 normal / silent
+  whenCrispOperator: silent
+  # Telegram 内人工回复后，后续用户消息推送到 TG 时是否静默；可选 normal / silent
+  whenTelegramOperator: normal
+  # 手动点击 /ai_off 后，后续用户消息推送到 TG 时是否静默；可选 normal / silent
+  whenManualOff: silent
 crisp:
   # 插件 ID
   id:
@@ -19,6 +26,8 @@ easyimages:
 learning:
   # 记录用户问题、AI 回复、人工回复，用于后续人工整理 FAQ；会做基础脱敏
   enabled: true
+  # 用户发送图片时，上传到 EasyImages 并把图片链接写入 learning_logs.jsonl
+  imageEnabled: true
   logPath: data/learning_logs.jsonl
 replyUser:
   # 人工客服发送到 Crisp 时显示的名字和头像

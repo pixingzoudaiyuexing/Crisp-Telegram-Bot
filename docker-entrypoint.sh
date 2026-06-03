@@ -20,6 +20,10 @@ bot:
   groupId: ${BOT_GROUPID}
 ai:
   autoResumeMinutes: ${AI_AUTO_RESUME_MINUTES:-30}
+telegramNotify:
+  whenCrispOperator: ${TG_NOTIFY_WHEN_CRISP_OPERATOR:-silent}
+  whenTelegramOperator: ${TG_NOTIFY_WHEN_TELEGRAM_OPERATOR:-normal}
+  whenManualOff: ${TG_NOTIFY_WHEN_MANUAL_OFF:-silent}
 crisp:
   id: ${CRISP_ID}
   key: ${CRISP_KEY}
@@ -29,6 +33,7 @@ easyimages:
   apiToken: ${EasyImages_apiToken}
 learning:
   enabled: ${LEARNING_ENABLED:-true}
+  imageEnabled: ${LEARNING_IMAGE_ENABLED:-true}
   logPath: ${LEARNING_LOG_PATH:-/Crisp-Telegram-Bot/data/learning_logs.jsonl}
 replyUser:
   operatorNickname: ${OPERATOR_NICKNAME:-人工客服}

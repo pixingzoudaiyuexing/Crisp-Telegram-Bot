@@ -37,6 +37,12 @@ def mask_url(match):
     return re.sub(r"([?&](?:token|key|auth|password|passwd|pwd|access_token|sub|subscribe)=)[^&\s]+", r"\1[hidden]", url, flags=re.I)
 
 
+def mask_url_text(value):
+    if value is None:
+        return None
+    return re.sub(r"https?://\S+", mask_url, str(value))
+
+
 def mask_meta(meta):
     if not isinstance(meta, dict):
         return {}
@@ -61,7 +67,10 @@ def log_event(event_type, session_id, content=None, meta=None, extra=None):
         "meta": mask_meta(meta),
     }
     if extra:
-        event["extra"] = {key: mask_text(value) for key, value in extra.items()}
+        event["extra"] = {
+            key: mask_url_text(value) if str(key).lower().endswith("url") else mask_text(value)
+            for key, value in extra.items()
+        }
 
     path = get_log_path()
     try:
