@@ -25,7 +25,7 @@ services:
 
       # 是否记录用户问题、AI 回复、人工回复，方便以后整理知识库
       LEARNING_ENABLED: "true"
-      # 是否把用户发来的图片上传到 EasyImages，并把图床链接写入学习日志
+      # 是否记录图片学习日志；开启后会记录用户图片 user_image 和 TG 人工图片 operator_image_reply
       LEARNING_IMAGE_ENABLED: "true"
       # 学习日志保存路径；配合上面的 volume，宿主机路径是 ./data/learning_logs.jsonl
       LEARNING_LOG_PATH: /Crisp-Telegram-Bot/data/learning_logs.jsonl

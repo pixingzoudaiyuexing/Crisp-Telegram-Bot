@@ -26,7 +26,7 @@ easyimages:
 learning:
   # 记录用户问题、AI 回复、人工回复，用于后续人工整理 FAQ；会做基础脱敏
   enabled: true
-  # 用户发送图片时，上传到 EasyImages 并把图片链接写入 learning_logs.jsonl
+  # 是否记录图片学习日志；开启后会记录用户图片 user_image 和 TG 人工图片 operator_image_reply
   imageEnabled: true
   logPath: data/learning_logs.jsonl
 replyUser:

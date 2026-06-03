@@ -85,6 +85,8 @@ TG_NOTIFY_WHEN_TELEGRAM_OPERATOR = session_state.normalize_notify_mode(
 TG_NOTIFY_WHEN_MANUAL_OFF = session_state.normalize_notify_mode(
     TG_NOTIFY.get('whenManualOff'), 'silent'
 )
+LEARNING_CFG = config.get('learning', {}) or {}
+LEARNING_IMAGE_ENABLED = bool(LEARNING_CFG.get('imageEnabled', True))
 
 async def onReply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     msg = update.effective_message
@@ -162,17 +164,18 @@ async def handleImage(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             # 将 Markdown 链接推送给客户
             send_markdown_to_client(session_id, markdown_link)
-            learning.log_event(
-                "operator_image_reply",
-                session_id,
-                "人工发送图片",
-                extra={
-                    "imageUrl": uploaded_url,
-                    "sourceUrl": file_url,
-                    "markdown": markdown_link,
-                    "telegramThreadId": msg.message_thread_id
-                }
-            )
+            if LEARNING_IMAGE_ENABLED:
+                learning.log_event(
+                    "operator_image_reply",
+                    session_id,
+                    "人工发送图片",
+                    extra={
+                        "imageUrl": uploaded_url,
+                        "sourceUrl": file_url,
+                        "markdown": markdown_link,
+                        "telegramThreadId": msg.message_thread_id
+                    }
+                )
             await msg.reply_text("图片已成功发送给客户！")
         else:
             await msg.reply_text("未找到对应的 Crisp 会话，无法发送给客户。")

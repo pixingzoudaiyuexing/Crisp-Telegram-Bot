@@ -150,6 +150,8 @@ LEARNING_LOG_PATH: /Crisp-Telegram-Bot/data/learning_logs.jsonl
 
 图片处理：
 
+- `LEARNING_IMAGE_ENABLED=true` 时，用户图片会记录为 `user_image`
+- `LEARNING_IMAGE_ENABLED=true` 时，Telegram 人工图片会记录为 `operator_image_reply`
 - 用户在 Crisp 发图片时，会上传到 EasyImages
 - Telegram 人工发图片时，也会上传到 EasyImages
 - 日志里保存图片链接，方便后续整理知识库
